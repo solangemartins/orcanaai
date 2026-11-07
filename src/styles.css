@@ -131,6 +131,15 @@
 @utility shadow-lift {
   box-shadow: var(--shadow-lift);
 }
+/* Google brand guideline (light theme) */
+@utility btn-google {
+  background-color: #ffffff;
+  color: #1f1f1f;
+  border: 1px solid #747775;
+  &:hover {
+    background-color: #f8f9fa;
+  }
+}
 @utility font-display {
   font-family: var(--font-display);
 }
