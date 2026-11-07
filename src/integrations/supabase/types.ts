@@ -14,7 +14,150 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      chat_messages: {
+        Row: {
+          created_at: string
+          id: string
+          parts: Json
+          role: string
+          sdk_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          parts: Json
+          role: string
+          sdk_id: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          parts?: Json
+          role?: string
+          sdk_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      goals: {
+        Row: {
+          created_at: string
+          id: string
+          prazo: string | null
+          titulo: string
+          user_id: string
+          valor_atual: number
+          valor_objetivo: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          prazo?: string | null
+          titulo: string
+          user_id?: string
+          valor_atual?: number
+          valor_objetivo: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          prazo?: string | null
+          titulo?: string
+          user_id?: string
+          valor_atual?: number
+          valor_objetivo?: number
+        }
+        Relationships: []
+      }
+      insights: {
+        Row: {
+          created_at: string
+          descricao: string
+          id: string
+          titulo: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          descricao: string
+          id?: string
+          titulo: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string
+          id?: string
+          titulo?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          nome: string
+          notificacoes: boolean
+          onboarded: boolean
+          orcamento_mensal: number | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id: string
+          nome?: string
+          notificacoes?: boolean
+          onboarded?: boolean
+          orcamento_mensal?: number | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          nome?: string
+          notificacoes?: boolean
+          onboarded?: boolean
+          orcamento_mensal?: number | null
+        }
+        Relationships: []
+      }
+      transactions: {
+        Row: {
+          categoria: string
+          created_at: string
+          data: string
+          descricao: string
+          id: string
+          tipo: string
+          user_id: string
+          valor: number
+        }
+        Insert: {
+          categoria?: string
+          created_at?: string
+          data?: string
+          descricao?: string
+          id?: string
+          tipo: string
+          user_id?: string
+          valor: number
+        }
+        Update: {
+          categoria?: string
+          created_at?: string
+          data?: string
+          descricao?: string
+          id?: string
+          tipo?: string
+          user_id?: string
+          valor?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
