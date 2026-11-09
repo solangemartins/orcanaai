@@ -62,8 +62,7 @@ function ChatWindow({ initial }: { initial: UIMessage[] }) {
     onFinish: () => {
       qc.invalidateQueries({ queryKey: ["transactions"] });
       qc.invalidateQueries({ queryKey: ["goals"] });
-      qc.setQueryData(["chat-history"], undefined);
-      qc.removeQueries({ queryKey: ["chat-history"] });
+      qc.invalidateQueries({ queryKey: ["chat-history"] });
     },
   });
 
