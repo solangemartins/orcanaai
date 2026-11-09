@@ -1,11 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { MessageCircle, Target, PieChart, Sparkles as _unused } from "lucide-react";
+import { MessageCircle, Target, PieChart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo, OrcaAvatar } from "@/components/Brand";
 import { useAuth } from "@/lib/auth";
-
-void _unused;
 
 export const Route = createFileRoute("/")({
   head: () => ({
