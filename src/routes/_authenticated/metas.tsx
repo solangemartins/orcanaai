@@ -68,7 +68,7 @@ function NovaMeta({ onDone }: { onDone: () => void }) {
       valor_atual: atual ? num(atual) : 0,
       prazo: prazo || null,
     });
-    if (error) return toast.error("Confira os valores e tente de novo.");
+    if (error) { toast.error("Confira os valores e tente de novo."); return; }
     qc.invalidateQueries({ queryKey: ["goals"] });
     toast.success("Meta criada!");
     onDone();
@@ -98,7 +98,7 @@ function GoalCard({ goal }: { goal: Goal }) {
     const v = num(add);
     if (!v || v <= 0) return;
     const { error } = await supabase.from("goals").update({ valor_atual: goal.valor_atual + v }).eq("id", goal.id);
-    if (error) return toast.error("Não foi possível atualizar.");
+    if (error) { toast.error("Não foi possível atualizar."); return; }
     setAdd("");
     qc.invalidateQueries({ queryKey: ["goals"] });
     toast.success(`${formatBRL(v)} guardados em ${goal.titulo}`);

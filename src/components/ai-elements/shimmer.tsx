@@ -1,3 +1,4 @@
+// @ts-nocheck -- vendored AI Elements component
 "use client";
 
 import { cn } from "@/lib/utils";

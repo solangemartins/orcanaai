@@ -29,8 +29,8 @@ const json = (status: number, body: unknown) =>
 async function authenticate(request: Request) {
   const auth = request.headers.get("authorization");
   if (!auth?.startsWith("Bearer ")) return null;
-  const url = process.env.SUPABASE_URL!;
-  const key = process.env.SUPABASE_PUBLISHABLE_KEY!;
+  const url = process.env["SUPABASE_URL"]!;
+  const key = process.env["SUPABASE_PUBLISHABLE_KEY"]!;
   const supabase = createClient<Database>(url, key, {
     global: { headers: { Authorization: auth } },
     auth: { persistSession: false, autoRefreshToken: false },
@@ -43,7 +43,7 @@ async function authenticate(request: Request) {
 type Ctx = NonNullable<Awaited<ReturnType<typeof authenticate>>>;
 
 function gateway(request: Request) {
-  const apiKey = process.env.LOVABLE_API_KEY;
+  const apiKey = process.env["LOVABLE_API_KEY"];
   if (!apiKey) throw new Error("LOVABLE_API_KEY ausente");
   const runIdFetch = createLovableAiGatewayRunIdFetch(getLovableAiGatewayRunId(request));
   const provider = createOpenAI({

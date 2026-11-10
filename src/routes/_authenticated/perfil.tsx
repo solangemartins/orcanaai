@@ -38,7 +38,7 @@ function Perfil() {
       .from("profiles")
       .update({ nome, orcamento_mensal: orc ? Number(orc.replace(",", ".")) : null, notificacoes: notif })
       .eq("id", user.id);
-    if (error) return toast.error("Não foi possível salvar.");
+    if (error) { toast.error("Não foi possível salvar."); return; }
     qc.invalidateQueries({ queryKey: ["profile", user.id] });
     toast.success("Perfil atualizado");
   };
@@ -46,13 +46,13 @@ function Perfil() {
   const trocarSenha = async (e: FormEvent) => {
     e.preventDefault();
     const { error } = await supabase.auth.updateUser({ password: senha, current_password: senhaAtual } as never);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     setSenha(""); setSenhaAtual("");
     toast.success("Senha alterada");
   };
 
   return (
-    <Page title="Perfil" subtitle={user.email ?? undefined}>
+    <Page title="Perfil" subtitle={user.email ?? ""}>
       <form onSubmit={salvar} className="space-y-5 rounded-2xl border bg-card p-5 shadow-soft">
         <h2 className="text-lg font-semibold">Dados pessoais e preferências</h2>
         <div className="space-y-1.5"><Label htmlFor="n">Nome</Label><Input id="n" value={nome} onChange={(e) => setNome(e.target.value)} /></div>
