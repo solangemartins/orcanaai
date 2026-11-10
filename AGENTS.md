@@ -28,3 +28,6 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+- Orça AI chat and weekly diagnosis run in `src/lib/orca.server.ts` behind `/api/chat` and `/api/diagnostico`; they verify the user's bearer token and write via RLS — keeps AI keys server-side and data per-user.
+- Signed-in pages live under `src/routes/_authenticated/` (client-only gate) — session lives in browser storage.

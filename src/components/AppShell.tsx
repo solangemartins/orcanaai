@@ -100,7 +100,7 @@ function Onboarding({ userId, initialName }: { userId: string; initialName: stri
       .update({ nome: nome.trim(), orcamento_mensal: orcamento ? Number(orcamento.replace(",", ".")) : null, onboarded: true })
       .eq("id", userId);
     setSaving(false);
-    if (error) return toast.error("Não foi possível salvar. Tente de novo.");
+    if (error) { toast.error("Não foi possível salvar. Tente de novo."); return; }
     qc.invalidateQueries({ queryKey: ["profile", userId] });
   };
 
@@ -124,8 +124,8 @@ function Onboarding({ userId, initialName }: { userId: string; initialName: stri
         {step < 2 ? (
           <>
             <DialogHeader>
-              <DialogTitle className="text-center text-2xl">{steps[step].title}</DialogTitle>
-              <DialogDescription className="text-center text-base">{steps[step].body}</DialogDescription>
+              <DialogTitle className="text-center text-2xl">{steps[step]!.title}</DialogTitle>
+              <DialogDescription className="text-center text-base">{steps[step]!.body}</DialogDescription>
             </DialogHeader>
             <Button size="lg" onClick={() => setStep(step + 1)}>Continuar</Button>
             <p className="text-center text-sm text-muted-foreground">Passo {step + 1} de 3</p>

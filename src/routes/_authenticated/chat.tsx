@@ -16,7 +16,7 @@ import { OrcaAvatar } from "@/components/Brand";
 import { formatBRL } from "@/lib/finance";
 
 export const Route = createFileRoute("/_authenticated/chat")({
-  validateSearch: (s: Record<string, unknown>) => ({ q: typeof s.q === "string" ? s.q : undefined }),
+  validateSearch: (s: Record<string, unknown>) => ({ q: typeof s["q"] === "string" ? (s["q"] as string) : undefined }),
   head: () => ({ meta: [{ title: "Conversar com o Orça — FINOVO" }, { name: "description", content: "Registre gastos e receitas conversando." }] }),
   component: ChatPage,
 });
