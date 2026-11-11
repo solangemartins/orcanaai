@@ -19,6 +19,7 @@ export type Database = {
           created_at: string
           id: string
           parts: Json
+          reply_to_sdk_id: string | null
           role: string
           sdk_id: string
           user_id: string
@@ -27,6 +28,7 @@ export type Database = {
           created_at?: string
           id?: string
           parts: Json
+          reply_to_sdk_id?: string | null
           role: string
           sdk_id: string
           user_id?: string
@@ -35,11 +37,126 @@ export type Database = {
           created_at?: string
           id?: string
           parts?: Json
+          reply_to_sdk_id?: string | null
           role?: string
           sdk_id?: string
           user_id?: string
         }
         Relationships: []
+      }
+      goal_movement_proposals: {
+        Row: {
+          action: string
+          amount: number
+          created_at: string
+          delta: number
+          expected_balance: number
+          goal_id: string
+          id: string
+          reason: string
+          reference_id: string | null
+          request_key: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          amount: number
+          created_at?: string
+          delta: number
+          expected_balance: number
+          goal_id: string
+          id?: string
+          reason?: string
+          reference_id?: string | null
+          request_key: string
+          status?: string
+          user_id?: string
+        }
+        Update: {
+          action?: string
+          amount?: number
+          created_at?: string
+          delta?: number
+          expected_balance?: number
+          goal_id?: string
+          id?: string
+          reason?: string
+          reference_id?: string | null
+          request_key?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goal_movement_proposals_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "goal_movement_proposals_reference_id_fkey"
+            columns: ["reference_id"]
+            isOneToOne: false
+            referencedRelation: "goal_movements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      goal_movements: {
+        Row: {
+          action: string
+          amount: number
+          balance_after: number
+          balance_before: number
+          created_at: string
+          goal_id: string
+          id: string
+          reason: string
+          reference_id: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          amount: number
+          balance_after: number
+          balance_before: number
+          created_at?: string
+          goal_id: string
+          id?: string
+          reason?: string
+          reference_id?: string | null
+          user_id?: string
+        }
+        Update: {
+          action?: string
+          amount?: number
+          balance_after?: number
+          balance_before?: number
+          created_at?: string
+          goal_id?: string
+          id?: string
+          reason?: string
+          reference_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goal_movements_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "goal_movements_reference_id_fkey"
+            columns: ["reference_id"]
+            isOneToOne: false
+            referencedRelation: "goal_movements"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       goals: {
         Row: {
@@ -163,7 +280,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      confirm_goal_movement: {
+        Args: { p_approved: boolean; p_proposal_id: string }
+        Returns: Json
+      }
+      prepare_goal_movement: {
+        Args: {
+          p_action: string
+          p_amount: number
+          p_goal_id: string
+          p_reason: string
+          p_reference_id?: string
+          p_request_key: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never

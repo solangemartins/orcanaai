@@ -8,6 +8,13 @@
       "when": 1794074604537,
       "tag": "0000_migration",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1794412721498,
+      "tag": "0001_audited_goal_confirmations_and_chat_order",
+      "breakpoints": true
     }
   ]
 }
