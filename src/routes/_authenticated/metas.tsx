@@ -14,7 +14,7 @@ import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/_authenticated/metas")({
-  head: () => ({ meta: [{ title: "Metas — FINOVO" }, { name: "description", content: "Acompanhe seus objetivos financeiros." }] }),
+  head: () => ({ meta: [{ title: "Metas — ORÇANA AI" }, { name: "description", content: "Acompanhe seus objetivos financeiros." }] }),
   component: Metas,
 });
 

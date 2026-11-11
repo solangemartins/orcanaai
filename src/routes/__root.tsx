@@ -83,9 +83,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "FINOVO — Finanças tão simples quanto conversar" },
+      { title: "ORÇANA AI — Finanças tão simples quanto conversar" },
       { name: "description", content: "Organize suas finanças conversando com o Orça, seu agente financeiro com IA." },
-      { property: "og:title", content: "FINOVO — Finanças tão simples quanto conversar" },
+      { property: "og:title", content: "ORÇANA AI — Finanças tão simples quanto conversar" },
       { property: "og:description", content: "Organize suas finanças conversando com o Orça, seu agente financeiro com IA." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

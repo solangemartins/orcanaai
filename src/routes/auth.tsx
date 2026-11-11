@@ -13,10 +13,10 @@ import { GoogleIcon, Logo, OrcaAvatar } from "@/components/Brand";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Entrar — FINOVO" },
-      { name: "description", content: "Entre ou crie sua conta no FINOVO para organizar suas finanças com o Orça." },
-      { property: "og:title", content: "Entrar — FINOVO" },
-      { property: "og:description", content: "Entre ou crie sua conta no FINOVO." },
+      { title: "Entrar — ORÇANA AI" },
+      { name: "description", content: "Entre ou crie sua conta no ORÇANA AI para organizar suas finanças com o Orça." },
+      { property: "og:title", content: "Entrar — ORÇANA AI" },
+      { property: "og:description", content: "Entre ou crie sua conta no ORÇANA AI." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],

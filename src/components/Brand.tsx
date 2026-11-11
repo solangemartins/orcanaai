@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 export function Logo({ className, light }: { className?: string; light?: boolean }) {
   return (
     <span className={cn("font-display text-xl font-bold tracking-tight", light ? "text-primary-foreground" : "text-primary", className)}>
-      FIN<span className="text-secondary">O</span>VO
+      ORÇANA <span className="text-secondary">AI</span>
     </span>
   );
 }
