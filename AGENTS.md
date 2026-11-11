@@ -31,3 +31,6 @@ use the editor.
 
 - Orça AI chat and weekly diagnosis run in `src/lib/orca.server.ts` behind `/api/chat` and `/api/diagnostico`; they verify the user's bearer token and write via RLS — keeps AI keys server-side and data per-user.
 - Signed-in pages live under `src/routes/_authenticated/` (client-only gate) — session lives in browser storage.
+- Goal balance changes use persisted proposals and explicit UI confirmation through atomic RPCs; an audit trigger records balance deltas across every write path to prevent missing correction history.
+- Chat persists the user before streaming and assigns each assistant a stable generated SDK ID and later timestamp; restored history is chronologically sorted and deduplicated to survive refreshes.
+- Leaf page metadata uses a shared helper so each content page supplies its own social title and description.
