@@ -10,7 +10,7 @@ function recorder(failBalance = false) {
   const ctx = { supabase: { from, rpc }, user: { id: "owner" } } as unknown as Parameters<typeof buildTools>[0];
   const execute = buildTools(ctx, "Recebi R$ 700 de freelancer.", "message-id").registrar_transacao.execute;
   if (!execute) throw new Error("Recorder missing");
-  return { insert, from, rpc, run: () => execute(income, { toolCallId: "call-id", messages: [], context: undefined }) };
+  return { insert, from, rpc, run: () => execute(income, { toolCallId: "call-id", messages: [], context: {} }) };
 }
 
 describe("Receita sem destinação automática", () => {
