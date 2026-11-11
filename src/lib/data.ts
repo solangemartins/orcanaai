@@ -32,6 +32,24 @@ export const goalsQuery = queryOptions({
   },
 });
 
+export const goalMovementsQuery = queryOptions({
+  queryKey: ["goal-movements"],
+  queryFn: async () => {
+    const { data, error } = await supabase.from("goal_movements").select("*").order("created_at", { ascending: false }).order("id", { ascending: false });
+    if (error) throw error;
+    return data ?? [];
+  },
+});
+
+export const goalProposalsQuery = queryOptions({
+  queryKey: ["goal-proposals"],
+  queryFn: async () => {
+    const { data, error } = await supabase.from("goal_movement_proposals").select("*");
+    if (error) throw error;
+    return data ?? [];
+  },
+});
+
 export const profileQuery = (userId: string) =>
   queryOptions({
     queryKey: ["profile", userId],

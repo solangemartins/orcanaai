@@ -9,9 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { pageMeta } from "@/lib/metadata";
 
 export const Route = createFileRoute("/_authenticated/perfil")({
-  head: () => ({ meta: [{ title: "Perfil — ORÇANA AI" }, { name: "description", content: "Dados pessoais, preferências e segurança." }] }),
+  head: () => pageMeta("Perfil — ORÇANA AI", "Gerencie seus dados pessoais, preferências e segurança da conta."),
   component: Perfil,
 });
 

@@ -8,9 +8,10 @@ import { CATEGORIA_EMOJI, byCategory, formatBRL, formatDate, goalProgress, inMon
 import { Page, StatCard } from "@/components/Page";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
+import { pageMeta } from "@/lib/metadata";
 
 export const Route = createFileRoute("/_authenticated/relatorios")({
-  head: () => ({ meta: [{ title: "Relatórios — ORÇANA AI" }, { name: "description", content: "Gastos por categoria, evolução mensal e comparativos." }] }),
+  head: () => pageMeta("Relatórios — ORÇANA AI", "Consulte gastos por categoria, evolução mensal e comparativos financeiros."),
   component: Relatorios,
 });
 
