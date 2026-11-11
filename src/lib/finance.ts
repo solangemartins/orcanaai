@@ -53,7 +53,7 @@ export function normalizeCategoria(c: string | undefined | null): Categoria {
   return found ?? "Outros";
 }
 
-export function summarize(txs: ReadonlyArray<Pick<Tx, "tipo" | "valor">>) {
+export function summarize<T extends Pick<Tx, "tipo" | "valor">>(txs: ReadonlyArray<T>) {
   let receitas = 0;
   let despesas = 0;
   for (const t of txs) {

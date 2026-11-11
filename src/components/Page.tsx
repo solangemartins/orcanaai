@@ -16,7 +16,7 @@ export function Page({ title, subtitle, actions, children, className }: { title:
   );
 }
 
-export function StatCard({ label, value, tone, icon, description }: { label: string; value: string; tone?: "income" | "expense" | "primary"; icon?: ReactNode; description?: string }) {
+export function StatCard({ label, value, tone, icon, description }: { label: string; value: string; tone?: "income" | "expense" | "primary"; icon?: ReactNode; description?: string | undefined }) {
   return (
     <div role="group" aria-label={label} className={cn("min-w-0 rounded-2xl border bg-card p-5 shadow-soft", tone === "primary" && "border-transparent bg-hero text-primary-foreground")}>
       <div className={cn("flex items-center gap-2 text-sm font-medium", tone === "primary" ? "text-primary-foreground/80" : "text-muted-foreground")}>
