@@ -10,7 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/relatorios")({
-  head: () => ({ meta: [{ title: "Relatórios — FINOVO" }, { name: "description", content: "Gastos por categoria, evolução mensal e comparativos." }] }),
+  head: () => ({ meta: [{ title: "Relatórios — ORÇANA AI" }, { name: "description", content: "Gastos por categoria, evolução mensal e comparativos." }] }),
   component: Relatorios,
 });
 

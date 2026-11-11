@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 
 export const Route = createFileRoute("/_authenticated/perfil")({
-  head: () => ({ meta: [{ title: "Perfil — FINOVO" }, { name: "description", content: "Dados pessoais, preferências e segurança." }] }),
+  head: () => ({ meta: [{ title: "Perfil — ORÇANA AI" }, { name: "description", content: "Dados pessoais, preferências e segurança." }] }),
   component: Perfil,
 });
 

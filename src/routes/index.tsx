@@ -8,9 +8,9 @@ import { useAuth } from "@/lib/auth";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "FINOVO — Organize suas finanças conversando" },
+      { title: "ORÇANA AI — Organize suas finanças conversando" },
       { name: "description", content: "Registre gastos e receitas em linguagem natural com o Orça, seu agente financeiro com IA. Metas, relatórios e diagnóstico semanal." },
-      { property: "og:title", content: "FINOVO — Organize suas finanças conversando" },
+      { property: "og:title", content: "ORÇANA AI — Organize suas finanças conversando" },
       { property: "og:description", content: "Registre gastos em linguagem natural com o Orça, seu agente financeiro com IA." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -94,7 +94,7 @@ function Landing() {
           </div>
         </section>
       </main>
-      <footer className="py-8 text-center text-sm text-muted-foreground">© {new Date().getFullYear()} FINOVO</footer>
+      <footer className="py-8 text-center text-sm text-muted-foreground">© {new Date().getFullYear()} ORÇANA AI</footer>
     </div>
   );
 }

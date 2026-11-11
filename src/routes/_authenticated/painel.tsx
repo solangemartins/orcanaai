@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 
 export const Route = createFileRoute("/_authenticated/painel")({
-  head: () => ({ meta: [{ title: "Painel — FINOVO" }, { name: "description", content: "Visão geral das suas finanças." }] }),
+  head: () => ({ meta: [{ title: "Painel — ORÇANA AI" }, { name: "description", content: "Visão geral das suas finanças." }] }),
   component: Painel,
 });
 

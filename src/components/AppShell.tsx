@@ -1,7 +1,7 @@
 import { Link, Outlet, useNavigate, useRouteContext } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { LayoutDashboard, MessageCircle, Target, BarChart3, UserRound, LogOut } from "lucide-react";
+import { LayoutDashboard, MessageCircle, Target, BarChart3, UserRound, LogOut, ArrowLeft, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { profileQuery } from "@/lib/data";
@@ -106,7 +106,7 @@ function Onboarding({ userId, initialName }: { userId: string; initialName: stri
 
   const steps = [
     {
-      title: "Bem-vindo ao FINOVO",
+      title: "Bem-vindo ao ORÇANA AI",
       body: "Aqui você organiza seu dinheiro conversando — sem planilhas e sem formulários complicados.",
     },
     {
@@ -127,7 +127,16 @@ function Onboarding({ userId, initialName }: { userId: string; initialName: stri
               <DialogTitle className="text-center text-2xl">{steps[step]!.title}</DialogTitle>
               <DialogDescription className="text-center text-base">{steps[step]!.body}</DialogDescription>
             </DialogHeader>
-            <Button size="lg" onClick={() => setStep(step + 1)}>Continuar</Button>
+            <div className="flex gap-2">
+              {step > 0 && (
+                <Button variant="outline" size="lg" className="flex-1" onClick={() => setStep(step - 1)}>
+                  <ArrowLeft aria-hidden /> Voltar
+                </Button>
+              )}
+              <Button variant="turquoise" size="lg" className="flex-1" onClick={() => setStep(step + 1)}>
+                Próximo <ArrowRight aria-hidden />
+              </Button>
+            </div>
             <p className="text-center text-sm text-muted-foreground">Passo {step + 1} de 3</p>
           </>
         ) : (
@@ -147,9 +156,12 @@ function Onboarding({ userId, initialName }: { userId: string; initialName: stri
                 <p className="text-sm text-muted-foreground">Esse é seu <strong>orçamento</strong>: um limite que ajuda o Orça a te avisar quando estiver gastando demais.</p>
               </div>
             </div>
-            <Button size="lg" onClick={finish} disabled={!nome.trim() || saving}>
+            <div className="flex gap-2">
+              <Button variant="outline" size="lg" onClick={() => setStep(1)}><ArrowLeft aria-hidden /> Voltar</Button>
+              <Button variant="turquoise" size="lg" className="flex-1" onClick={finish} disabled={!nome.trim() || saving}>
               {saving ? "Salvando..." : "Começar a usar"}
             </Button>
+            </div>
           </>
         )}
       </DialogContent>
