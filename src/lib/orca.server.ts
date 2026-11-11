@@ -217,7 +217,7 @@ export async function handleChat(request: Request) {
   if (!lastUser?.id || !Array.isArray(lastUser.parts)) return json(400, { error: "Mensagem inválida" });
   const lastUserText = lastUser.parts.filter((p) => p.type === "text").map((p) => p.text).join("\n");
   if (!lastUserText.trim()) return json(400, { error: "Mensagem vazia" });
-  const { data: savedUser, error: userSaveError } = await ctx.supabase.from("chat_messages").upsert({
+  const { error: userSaveError } = await ctx.supabase.from("chat_messages").upsert({
     user_id: ctx.user.id, sdk_id: lastUser.id, role: "user", parts: lastUser.parts as Json,
   }, { onConflict: "user_id,sdk_id", ignoreDuplicates: true });
   if (userSaveError) return json(500, { error: "Não foi possível salvar sua mensagem. Tente novamente." });
