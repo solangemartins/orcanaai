@@ -63,19 +63,35 @@ function NovaMeta({ onDone }: { onDone: () => void }) {
   const [valor, setValor] = useState("");
   const [atual, setAtual] = useState("");
   const [prazo, setPrazo] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [createdGoal, setCreatedGoal] = useState<{ id: string; titulo: string }>();
+  const [proposalId, setProposalId] = useState<string>();
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    const { error } = await supabase.from("goals").insert({
-      titulo,
-      valor_objetivo: num(valor),
-      valor_atual: atual ? num(atual) : 0,
-      prazo: prazo || null,
-    });
-    if (error) { toast.error("Confira os valores e tente de novo."); return; }
-    qc.invalidateQueries({ queryKey: ["goals"] });
-    toast.success("Meta criada!");
-    onDone();
+    const startingAmount = atual ? num(atual) : 0;
+    if (!Number.isFinite(num(valor)) || num(valor) <= 0 || !Number.isFinite(startingAmount) || startingAmount < 0) { toast.error("Confira os valores e tente de novo."); return; }
+    setBusy(true);
+    try {
+      let goal = createdGoal;
+      if (!goal) {
+        const { data, error } = await supabase.from("goals").insert({ titulo, valor_objetivo: num(valor), valor_atual: 0, prazo: prazo || null }).select("id,titulo").single();
+        if (error || !data) { toast.error("Confira os valores e tente de novo."); return; }
+        goal = data;
+        setCreatedGoal(data);
+        await qc.invalidateQueries({ queryKey: ["goals"] });
+      }
+      if (startingAmount > 0) {
+        const { data, error } = await supabase.rpc("prepare_goal_movement", { p_goal_id: goal.id, p_action: "aporte", p_amount: startingAmount, p_reason: "Valor já guardado ao criar a meta", p_request_key: `initial:${goal.id}` });
+        if (error) { toast.error(error.message); return; }
+        await qc.invalidateQueries({ queryKey: ["goal-proposals"] });
+        setProposalId((data as { id?: string } | null)?.id);
+      } else {
+        toast.success("Meta criada!");
+        onDone();
+      }
+    } finally { setBusy(false); }
   };
+  if (proposalId && createdGoal) return <div className="space-y-3"><GoalConfirmation proposalId={proposalId} title={createdGoal.titulo} /><Button variant="outline" onClick={onDone}>Fechar</Button></div>;
   return (
     <form onSubmit={submit} className="space-y-4">
       <div className="space-y-1.5"><Label htmlFor="t">Objetivo</Label><Input id="t" required value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder="Ex.: Viagem para a praia" /></div>
@@ -84,7 +100,7 @@ function NovaMeta({ onDone }: { onDone: () => void }) {
         <div className="space-y-1.5"><Label htmlFor="a">Já guardado (R$)</Label><Input id="a" inputMode="decimal" value={atual} onChange={(e) => setAtual(e.target.value)} /></div>
       </div>
       <div className="space-y-1.5"><Label htmlFor="p">Prazo (opcional)</Label><Input id="p" type="date" value={prazo} onChange={(e) => setPrazo(e.target.value)} /></div>
-      <Button type="submit" className="w-full" size="lg">Criar meta</Button>
+      <Button type="submit" className="w-full" size="lg" disabled={busy}>{createdGoal ? "Revisar aporte" : "Criar meta"}</Button>
     </form>
   );
 }

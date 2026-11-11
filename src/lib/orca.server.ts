@@ -163,12 +163,15 @@ function buildTools(ctx: Ctx, latestUserText: string, requestKey: string) {
             user_id: ctx.user.id,
             titulo: input.titulo,
             valor_objetivo: input.valor_objetivo,
-            valor_atual: input.valor_atual ?? 0,
+            valor_atual: 0,
             prazo: input.prazo || null,
           })
           .select()
           .single();
         if (error) return { ok: false, erro: error.message };
+        if (input.valor_atual && input.valor_atual > 0) {
+          return { ok: true, meta: data, aviso: "Meta criada com saldo zero. Pergunte se o usuário deseja preparar um aporte do valor já guardado e aguarde confirmação." };
+        }
         return { ok: true, meta: data };
       },
     }),
@@ -201,7 +204,7 @@ const ORCA_PERSONA = `Você é o Orça, o agente financeiro do ORÇANA AI. Fale 
 - Receber dinheiro NÃO significa aportar em uma meta. Registre APENAS a receita. Se houver meta ativa, pergunte "Deseja adicionar algum valor dessa receita à sua meta <nome da meta>?". Nunca escolha o valor automaticamente.
 - Nenhuma movimentação entre saldo e metas acontece sem confirmação explícita. contribuir_meta e corrigir_meta apenas preparam propostas. Nunca diga que guardou, removeu, corrigiu ou estornou enquanto a proposta está pendente; diga que aguarda o clique em Confirmar. Um "sim" sem valor não basta: pergunte quanto.
 - Para "Remova R$ 650 da minha reserva", prepare retirada de R$ 650. Para "Desfaça o último aporte", prepare estorno do último aporte com histórico. Para "Corrija o último lançamento", pergunte qual é o valor correto se não foi informado. Atualize o progresso apenas após confirmação; cada correção fica no histórico. Nunca invente histórico de aportes antigos nem recrie receitas para corrigir uma meta.
-- Ao criar uma meta, valor_atual é zero salvo se o usuário explicitamente informar quanto já tem guardado. Não use receitas do contexto como saldo inicial.
+- Ao criar uma meta, o saldo começa em zero. Se o usuário informou dinheiro já guardado, pergunte se deseja preparar um aporte desse valor, que também exige confirmação. Não use receitas do contexto como saldo inicial.
 - Para recomendações, use os dados do contexto: aponte gastos excessivos, sugira economias concretas e ajude a atingir metas. Explique termos financeiros quando usar.
 - Respostas curtas (até ~120 palavras), com no máximo uma lista.`;
 
