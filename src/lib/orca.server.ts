@@ -110,7 +110,7 @@ Histórico recente das metas (valores antigos podem não ter histórico):
 ${s.movements.map((m) => `id ${m.id}, meta ${m.goal_id}, ${m.action}, variação ${formatBRL(Number(m.amount))}, saldo ${formatBRL(Number(m.balance_after))}, referência ${m.reference_id || "nenhuma"}`).join("\n") || "nenhum aporte com histórico"}`;
 }
 
-function buildTools(ctx: Ctx, latestUserText: string, requestKey: string) {
+export function buildTools(ctx: Ctx, latestUserText: string, requestKey: string) {
   const propose = async (goalId: string, action: "aporte" | "retirada" | "correcao" | "estorno", amount: number | null, reason: string, reference: string | null, toolCallId: string) => {
     if (!isGoalMovementRequest(latestUserText)) return { ok: false, erro: "O usuário não pediu uma movimentação na meta. Registre somente a receita e pergunte se ele deseja destinar algum valor, sem chamar ferramentas de metas." };
     const { data, error } = await ctx.supabase.rpc("prepare_goal_movement", {
@@ -145,6 +145,24 @@ function buildTools(ctx: Ctx, latestUserText: string, requestKey: string) {
           .select("id,tipo,valor,categoria,descricao,data")
           .single();
         if (error) return { ok: false, erro: error.message };
+        if (input.tipo === "receita") {
+          // Read persisted totals after recording, including earlier tool calls in this turn.
+          const transactions: Pick<Tx, "tipo" | "valor">[] = [];
+          const pageSize = 1000;
+          for (let start = 0; ; start += pageSize) {
+            const { data: rows, error: balanceError } = await ctx.supabase.from("transactions")
+              .select("tipo,valor").order("id").range(start, start + pageSize - 1);
+            if (balanceError) return { ok: true, transacao: data, saldo_livre: null, aviso: "Receita registrada, mas não foi possível consultar o saldo atualizado. Não registre a receita novamente." };
+            transactions.push(...(rows ?? []));
+            if ((rows?.length ?? 0) < pageSize) break;
+          }
+          const saldo = transactions.reduce((total, t) => total + (t.tipo === "receita" ? Number(t.valor) : -Number(t.valor)), 0);
+          return {
+            ok: true, transacao: data, saldo_livre: Math.round(saldo * 100) / 100,
+            destinos_disponiveis: ["guardar_parte", "investir", "direcionar_meta", "manter_disponivel"],
+            destino_confirmado: null,
+          };
+        }
         return { ok: true, transacao: data };
       },
     }),
@@ -201,7 +219,9 @@ const ORCA_PERSONA = `Você é o Orça, o agente financeiro do ORÇANA AI. Fale 
 - Se a mensagem tiver várias movimentações, registre cada uma.
 - Se faltar o valor, pergunte antes de registrar.
 - Quando o usuário quiser criar um objetivo, use criar_meta. Para guardar dinheiro numa meta, use contribuir_meta.
-- Receber dinheiro NÃO significa aportar em uma meta. Registre APENAS a receita. Se houver meta ativa, pergunte "Deseja adicionar algum valor dessa receita à sua meta <nome da meta>?". Nunca escolha o valor automaticamente.
+- Sempre que identificar uma receita: primeiro registre APENAS a receita com registrar_transacao. Após sucesso, informe o valor recebido e o saldo livre atualizado retornado pela ferramenta (saldo_livre), sem calcular a partir do contexto anterior. Se a consulta do saldo falhar, explique que a receita foi registrada mas o saldo não pôde ser consultado; nunca invente saldo nem registre novamente.
+- Depois de registrar uma receita, SEMPRE pergunte: "Você deseja guardar parte desse valor, investir, direcionar para uma meta ou manter como saldo disponível?". Ofereça as quatro escolhas mesmo sem meta ativa. Se houver meta, pode citar seu nome como opção, nunca como destino presumido. Não escolha valor, porcentagem, investimento nem destino pelo usuário.
+- Receber dinheiro NÃO significa aportar em uma meta ou investir. Nenhum destino é executado automaticamente. "Manter como saldo disponível" não exige novo lançamento e não altera metas. Para guardar parte, pergunte quanto e onde; para direcionar a uma meta, pergunte qual meta e quanto, se faltar. Prepare proposta somente após pedido explícito e aguarde Confirmar. Para investir, pergunte quanto e o objetivo, ofereça orientação educativa e não registre despesa, compra ou transferência: você não executa investimentos. Uma intenção futura não é uma movimentação já realizada. Nunca repita a receita ao responder às escolhas.
 - Nenhuma movimentação entre saldo e metas acontece sem confirmação explícita. contribuir_meta e corrigir_meta apenas preparam propostas. Nunca diga que guardou, removeu, corrigiu ou estornou enquanto a proposta está pendente; diga que aguarda o clique em Confirmar. Um "sim" sem valor não basta: pergunte quanto.
 - Para "Remova R$ 650 da minha reserva", prepare retirada de R$ 650. Para "Desfaça o último aporte", prepare estorno do último aporte com histórico. Para "Corrija o último lançamento", pergunte qual é o valor correto se não foi informado. Atualize o progresso apenas após confirmação; cada correção fica no histórico. Nunca invente histórico de aportes antigos nem recrie receitas para corrigir uma meta.
 - Ao criar uma meta, o saldo começa em zero. Se o usuário informou dinheiro já guardado, pergunte se deseja preparar um aporte desse valor, que também exige confirmação. Não use receitas do contexto como saldo inicial.
