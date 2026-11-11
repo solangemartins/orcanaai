@@ -7,6 +7,7 @@ import { profileQuery } from "@/lib/data";
 import { Page } from "@/components/Page";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { pageMeta } from "@/lib/metadata";
@@ -29,7 +30,7 @@ function Perfil() {
   useEffect(() => {
     if (!profile.data) return;
     setNome(profile.data.nome);
-    setOrc(profile.data.orcamento_mensal ? String(profile.data.orcamento_mensal) : "");
+    setOrc(profile.data.orcamento_mensal !== null ? String(profile.data.orcamento_mensal) : "");
     setNotif(profile.data.notificacoes);
   }, [profile.data]);
 
@@ -37,7 +38,7 @@ function Perfil() {
     e.preventDefault();
     const { error } = await supabase
       .from("profiles")
-      .update({ nome, orcamento_mensal: orc ? Number(orc.replace(",", ".")) : null, notificacoes: notif })
+      .update({ nome, orcamento_mensal: orc ? Number(orc) : null, notificacoes: notif })
       .eq("id", user.id);
     if (error) { toast.error("Não foi possível salvar."); return; }
     qc.invalidateQueries({ queryKey: ["profile", user.id] });
@@ -59,7 +60,7 @@ function Perfil() {
         <div className="space-y-1.5"><Label htmlFor="n">Nome</Label><Input id="n" value={nome} onChange={(e) => setNome(e.target.value)} /></div>
         <div className="space-y-1.5">
           <Label htmlFor="o">Orçamento mensal (R$)</Label>
-          <Input id="o" inputMode="decimal" value={orc} onChange={(e) => setOrc(e.target.value)} placeholder="Ex.: 3000" />
+          <CurrencyInput id="o" value={orc} onValueChange={setOrc} placeholder="R$ 0,00" />
           <p className="text-sm text-muted-foreground">Limite de gastos por mês. O Orça usa para te avisar se estiver perto de ultrapassar.</p>
         </div>
         <div className="flex items-center justify-between gap-4">

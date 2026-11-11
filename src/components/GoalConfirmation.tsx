@@ -18,8 +18,8 @@ export function GoalConfirmation({ proposalId, title }: { proposalId: string; ti
     setBusy(false);
     if (error) { toast.error(error.message); return; }
     const result = data as { status?: string } | null;
-    await Promise.all(["goals", "goal-proposals", "goal-movements"].map((key) => qc.invalidateQueries({ queryKey: [key] })));
-    toast.success(result?.status === "confirmed" ? "Meta atualizada. Movimentação salva no histórico." : "Cancelado. Nenhum saldo foi alterado.");
+    await Promise.all(["goals", "transactions", "goal-proposals", "goal-movements"].map((key) => qc.invalidateQueries({ queryKey: [key] })));
+    toast.success(result?.status === "confirmed" ? "Meta e saldo livre atualizados. Movimentação salva no histórico." : "Cancelado. Nenhum saldo foi alterado.");
   };
   if (proposals.isPending) return <p className="text-sm text-muted-foreground">Consultando confirmação...</p>;
   if (!proposal) return <p className="text-sm text-destructive">Não foi possível consultar esta confirmação.</p>;

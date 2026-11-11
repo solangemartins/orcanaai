@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowDownCircle, ArrowUpCircle, Wallet, MessageCircle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { authHeaders, goalsQuery, insightsQuery, profileQuery, transactionsQuery } from "@/lib/data";
-import { CATEGORIA_EMOJI, formatBRL, formatDate, goalProgress, inMonth, summarize } from "@/lib/finance";
+import { CATEGORIA_EMOJI, availableBalance, formatBRL, formatDate, goalProgress, inMonth, summarize } from "@/lib/finance";
 import { Page, StatCard } from "@/components/Page";
 import { OrcaAvatar } from "@/components/Brand";
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,8 @@ function Painel() {
   const autoTried = useRef(false);
 
   const list = txs.data ?? [];
-  const total = summarize(list);
+  const total = availableBalance(list, goals.data ?? []);
+  const balanceReady = txs.isSuccess && goals.isSuccess;
   const mes = summarize(inMonth(list));
   const latest = insights.data?.[0];
 
@@ -65,7 +66,7 @@ function Painel() {
   return (
     <Page title={nome ? `Olá, ${nome}!` : "Olá!"} subtitle={`Seu resumo de ${mesNome}`}>
       <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard tone="primary" label="Saldo atual" value={formatBRL(total.saldo)} icon={<Wallet className="size-4" aria-hidden />} />
+        <StatCard tone="primary" label="Saldo Livre Disponível" value={balanceReady ? formatBRL(total.saldo_livre) : txs.isError || goals.isError ? "Indisponível" : "Consultando…"} description={balanceReady ? `${formatBRL(total.reservado)} reservados nas metas` : undefined} icon={<Wallet className="size-4 shrink-0" aria-hidden />} />
         <StatCard tone="income" label="Receitas do mês" value={formatBRL(mes.receitas)} icon={<ArrowUpCircle className="size-4 text-income" aria-hidden />} />
         <StatCard tone="expense" label="Despesas do mês" value={formatBRL(mes.despesas)} icon={<ArrowDownCircle className="size-4 text-expense" aria-hidden />} />
       </div>
@@ -117,7 +118,7 @@ function Painel() {
             <p className="text-muted-foreground">Nenhuma meta ainda. Diga ao Orça: “Quero juntar R$ 5.000 para uma viagem”.</p>
           ) : (
             <ul className="space-y-4">
-              {goals.data!.slice(0, 3).map((g) => {
+              {(goals.data ?? []).slice(0, 3).map((g) => {
                 const p = goalProgress(g);
                 return (
                   <li key={g.id}>
