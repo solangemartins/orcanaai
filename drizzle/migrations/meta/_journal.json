@@ -15,6 +15,13 @@
       "when": 1794412721498,
       "tag": "0001_audited_goal_confirmations_and_chat_order",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794413523982,
+      "tag": "0002_enforce_goal_confirmation_on_all_balance_writes",
+      "breakpoints": true
     }
   ]
 }
