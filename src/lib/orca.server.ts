@@ -1,8 +1,10 @@
 import { createOpenAI } from "@ai-sdk/openai";
-import { convertToModelMessages, isStepCount, streamText, tool, type ModelMessage, type UIMessage } from "ai";
+import { convertToModelMessages, generateId, isStepCount, streamText, tool, type ModelMessage, type UIMessage } from "ai";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database, Json } from "@/integrations/supabase/types";
+import { assistantTimestamp } from "./chat-history";
+import { isGoalMovementRequest } from "./goal-rules";
 import {
   CATEGORIAS,
   byCategory,
@@ -68,13 +70,15 @@ const providerOptions = {
 const today = () => new Date().toISOString().slice(0, 10);
 
 async function loadSnapshot(ctx: Ctx) {
-  const [{ data: txs }, { data: goals }, { data: profile }] = await Promise.all([
+  const [{ data: txs, error: txError }, { data: goals, error: goalError }, { data: profile, error: profileError }, { data: movements, error: movementError }] = await Promise.all([
     ctx.supabase.from("transactions").select("id,tipo,valor,categoria,descricao,data").order("data", { ascending: false }).limit(500),
     ctx.supabase.from("goals").select("id,titulo,valor_objetivo,valor_atual,prazo"),
     ctx.supabase.from("profiles").select("nome,orcamento_mensal").eq("id", ctx.user.id).maybeSingle(),
+    ctx.supabase.from("goal_movements").select("id,goal_id,action,amount,balance_before,balance_after,reference_id,created_at").order("created_at", { ascending: false }).limit(30),
   ]);
+  if (txError || goalError || profileError || movementError) throw new Error("Não foi possível consultar seus dados financeiros.");
   const list: Tx[] = (txs ?? []).map((t) => ({ ...t, valor: Number(t.valor) }));
-  return { txs: list, goals: goals ?? [], profile };
+  return { txs: list, goals: goals ?? [], profile, movements: movements ?? [] };
 }
 
 function snapshotText(s: Awaited<ReturnType<typeof loadSnapshot>>) {
@@ -101,10 +105,21 @@ Orçamento mensal definido: ${s.profile?.orcamento_mensal ? formatBRL(Number(s.p
 Metas:
 ${goals || "nenhuma"}
 Últimas movimentações:
-${recent || "nenhuma"}`;
+${recent || "nenhuma"}
+Histórico recente das metas (valores antigos podem não ter histórico):
+${s.movements.map((m) => `id ${m.id}, meta ${m.goal_id}, ${m.action}, variação ${formatBRL(Number(m.amount))}, saldo ${formatBRL(Number(m.balance_after))}, referência ${m.reference_id || "nenhuma"}`).join("\n") || "nenhum aporte com histórico"}`;
 }
 
-function buildTools(ctx: Ctx) {
+function buildTools(ctx: Ctx, latestUserText: string, requestKey: string) {
+  const propose = async (goalId: string, action: "aporte" | "retirada" | "correcao" | "estorno", amount: number | null, reason: string, reference: string | null, toolCallId: string) => {
+    if (!isGoalMovementRequest(latestUserText)) return { ok: false, erro: "O usuário não pediu uma movimentação na meta. Registre somente a receita e pergunte se ele deseja destinar algum valor, sem chamar ferramentas de metas." };
+    const { data, error } = await ctx.supabase.rpc("prepare_goal_movement", {
+      p_goal_id: goalId, p_action: action, p_amount: amount ?? 0, p_reason: reason,
+      p_request_key: `${requestKey}:${toolCallId}`, ...(reference ? { p_reference_id: reference } : {}),
+    });
+    if (error) return { ok: false, erro: error.message };
+    return { ok: true, confirmacao_pendente: true, proposta: data, aviso: "Nenhum saldo foi alterado. O usuário precisa clicar em Confirmar na proposta exibida no chat." };
+  };
   return {
     registrar_transacao: tool({
       description:
@@ -158,15 +173,21 @@ function buildTools(ctx: Ctx) {
       },
     }),
     contribuir_meta: tool({
-      description: "Adiciona um valor guardado a uma meta existente. Use o id da meta do contexto.",
+      description: "Prepara uma proposta de aporte SOMENTE quando o usuário pede para guardar dinheiro. Não altera saldo: exige clique em Confirmar. Nunca use apenas porque uma receita foi recebida.",
       inputSchema: z.object({ meta_id: z.string(), valor: z.number().positive() }),
-      execute: async ({ meta_id, valor }) => {
-        const { data: g, error: e1 } = await ctx.supabase.from("goals").select("*").eq("id", meta_id).maybeSingle();
-        if (e1 || !g) return { ok: false, erro: "Meta não encontrada" };
-        const novo = Number(g.valor_atual) + valor;
-        const { data, error } = await ctx.supabase.from("goals").update({ valor_atual: novo }).eq("id", meta_id).select().single();
-        if (error) return { ok: false, erro: error.message };
-        return { ok: true, meta: data };
+      execute: async ({ meta_id, valor }, { toolCallId }) => propose(meta_id, "aporte", valor, latestUserText, null, toolCallId),
+    }),
+    corrigir_meta: tool({
+      description: "Prepara retirada, correção do valor de um aporte ou estorno do último aporte com histórico. Exige confirmação no chat antes de alterar saldo. Na correção, valor é o valor CORRETO do aporte, não o saldo total. Se faltar valor ou houver várias metas e nenhuma foi indicada, pergunte. Aportes antigos sem histórico só podem ser ajustados por retirada de valor explícito.",
+      inputSchema: z.object({
+        meta_id: z.string(), operacao: z.enum(["retirada", "correcao", "estorno"]),
+        valor: z.number().min(0).nullable().describe("Valor a retirar ou novo valor correto do aporte; null para estorno"),
+        aporte_id: z.string().nullable().describe("ID do aporte original do histórico; null usa último aporte ainda não estornado"),
+        motivo: z.string(),
+      }),
+      execute: async ({ meta_id, operacao, valor, aporte_id, motivo }, { toolCallId }) => {
+        if (operacao !== "estorno" && valor === null) return { ok: false, erro: "Pergunte ao usuário o valor antes de preparar a correção." };
+        return propose(meta_id, operacao, valor, motivo, aporte_id, toolCallId);
       },
     }),
   };
@@ -177,6 +198,10 @@ const ORCA_PERSONA = `Você é o Orça, o agente financeiro do ORÇANA AI. Fale 
 - Se a mensagem tiver várias movimentações, registre cada uma.
 - Se faltar o valor, pergunte antes de registrar.
 - Quando o usuário quiser criar um objetivo, use criar_meta. Para guardar dinheiro numa meta, use contribuir_meta.
+- Receber dinheiro NÃO significa aportar em uma meta. Registre APENAS a receita. Se houver meta ativa, pergunte "Deseja adicionar algum valor dessa receita à sua meta <nome da meta>?". Nunca escolha o valor automaticamente.
+- Nenhuma movimentação entre saldo e metas acontece sem confirmação explícita. contribuir_meta e corrigir_meta apenas preparam propostas. Nunca diga que guardou, removeu, corrigiu ou estornou enquanto a proposta está pendente; diga que aguarda o clique em Confirmar. Um "sim" sem valor não basta: pergunte quanto.
+- Para "Remova R$ 650 da minha reserva", prepare retirada de R$ 650. Para "Desfaça o último aporte", prepare estorno do último aporte com histórico. Para "Corrija o último lançamento", pergunte qual é o valor correto se não foi informado. Atualize o progresso apenas após confirmação; cada correção fica no histórico. Nunca invente histórico de aportes antigos nem recrie receitas para corrigir uma meta.
+- Ao criar uma meta, valor_atual é zero salvo se o usuário explicitamente informar quanto já tem guardado. Não use receitas do contexto como saldo inicial.
 - Para recomendações, use os dados do contexto: aponte gastos excessivos, sugira economias concretas e ajude a atingir metas. Explique termos financeiros quando usar.
 - Respostas curtas (até ~120 palavras), com no máximo uma lista.`;
 
@@ -188,16 +213,26 @@ export async function handleChat(request: Request) {
   const messages = body?.messages;
   if (!Array.isArray(messages) || messages.length === 0) return json(400, { error: "Mensagem inválida" });
 
+  const lastUser = [...messages].reverse().find((m) => m.role === "user");
+  if (!lastUser?.id || !Array.isArray(lastUser.parts)) return json(400, { error: "Mensagem inválida" });
+  const lastUserText = lastUser.parts.filter((p) => p.type === "text").map((p) => p.text).join("\n");
+  if (!lastUserText.trim()) return json(400, { error: "Mensagem vazia" });
+  const { data: savedUser, error: userSaveError } = await ctx.supabase.from("chat_messages").upsert({
+    user_id: ctx.user.id, sdk_id: lastUser.id, role: "user", parts: lastUser.parts as Json,
+  }, { onConflict: "user_id,sdk_id", ignoreDuplicates: true });
+  if (userSaveError) return json(500, { error: "Não foi possível salvar sua mensagem. Tente novamente." });
+  const { data: persistedUser, error: persistedError } = await ctx.supabase.from("chat_messages").select("created_at").eq("sdk_id", lastUser.id).eq("user_id", ctx.user.id).single();
+  if (persistedError || !persistedUser) return json(500, { error: "Não foi possível carregar sua mensagem." });
+
   const snapshot = await loadSnapshot(ctx);
   const { model, runIdFetch } = gateway(request);
   const modelMessages: ModelMessage[] = await convertToModelMessages(messages.slice(-30));
-  const lastUser = [...messages].reverse().find((m) => m.role === "user");
 
   const result = streamText({
     model,
     instructions: `${ORCA_PERSONA}\n\nHoje é ${today()}. Nome do usuário: ${snapshot.profile?.nome || "não informado"}.\n\nDados financeiros atuais:\n${snapshotText(snapshot)}`,
     messages: modelMessages,
-    tools: buildTools(ctx),
+    tools: buildTools(ctx, lastUserText, lastUser.id),
     stopWhen: isStepCount(5),
     abortSignal: request.signal,
     providerOptions,
@@ -205,13 +240,15 @@ export async function handleChat(request: Request) {
 
   const response = result.toUIMessageStreamResponse({
     originalMessages: messages,
+    generateMessageId: generateId,
     sendReasoning: true,
     onFinish: async ({ responseMessage }) => {
-      const rows = [lastUser, responseMessage]
-        .filter((m): m is UIMessage => !!m)
-        .map((m) => ({ user_id: ctx.user.id, sdk_id: m.id, role: m.role, parts: m.parts as never }));
-      const { error } = await ctx.supabase.from("chat_messages").upsert(rows, { onConflict: "user_id,sdk_id" });
-      if (error) console.error("Falha ao salvar mensagens", error);
+      if (!responseMessage.id) throw new Error("Resposta sem identificador; conversa não salva.");
+      const { error } = await ctx.supabase.from("chat_messages").upsert({
+        user_id: ctx.user.id, sdk_id: responseMessage.id, role: "assistant", parts: responseMessage.parts as Json,
+        created_at: assistantTimestamp(persistedUser.created_at), reply_to_sdk_id: lastUser.id,
+      }, { onConflict: "user_id,sdk_id" });
+      if (error) { console.error("Falha ao salvar resposta", error); throw new Error("Não foi possível salvar a resposta. Não repita movimentações sem conferir seu saldo."); }
     },
   });
   return withLovableAiGatewayRunIdHeader(response, runIdFetch);
