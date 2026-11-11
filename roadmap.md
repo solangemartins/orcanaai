@@ -10,7 +10,7 @@
 - [x] Preservar confirmação obrigatória e verificar receita e resposta de continuidade sem movimentações automáticas.
 
 ## Saldo livre, metas e moeda brasileira
-- [ ] Calcular saldo livre pelas receitas menos despesas e saldo reservado nas metas, no painel e no Orça.
-- [ ] Permitir consultas atualizadas e ajustes confirmados de metas pelo chat, sem novos lançamentos contábeis artificiais.
-- [ ] Aplicar máscara BRL em todos os campos monetários e salvar valores numéricos.
-- [ ] Verificar cálculos, confirmação/retirada/estorno e edição dos valores em telas desktop e celular.
+- [x] Calcular saldo livre pelas receitas menos despesas e saldo reservado nas metas, no painel e no Orça.
+- [x] Permitir consultas atualizadas e ajustes confirmados de metas pelo chat, sem novos lançamentos contábeis artificiais.
+- [x] Aplicar máscara BRL em todos os campos monetários e salvar valores numéricos.
+- [x] Verificar cálculos, confirmação/retirada/estorno e edição dos valores em telas desktop e celular.
