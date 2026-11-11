@@ -65,7 +65,7 @@ function Painel() {
 
   return (
     <Page title={nome ? `Olá, ${nome}!` : "Olá!"} subtitle={`Seu resumo de ${mesNome}`}>
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-3">
         <StatCard tone="primary" label="Saldo Livre Disponível" value={balanceReady ? formatBRL(total.saldo_livre) : txs.isError || goals.isError ? "Indisponível" : "Consultando…"} description={balanceReady ? `${formatBRL(total.reservado)} reservados nas metas` : undefined} icon={<Wallet className="size-4 shrink-0" aria-hidden />} />
         <StatCard tone="income" label="Receitas do mês" value={formatBRL(mes.receitas)} icon={<ArrowUpCircle className="size-4 text-income" aria-hidden />} />
         <StatCard tone="expense" label="Despesas do mês" value={formatBRL(mes.despesas)} icon={<ArrowDownCircle className="size-4 text-expense" aria-hidden />} />

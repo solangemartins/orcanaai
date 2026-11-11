@@ -33,7 +33,7 @@ function Relatorios() {
 
   return (
     <Page title="Relatórios" subtitle="Seu dinheiro, explicado de forma simples.">
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-3">
         <StatCard tone="primary" label="Resultado do mês" description="Receitas menos despesas do mês" value={formatBRL(s.saldo)} />
         <StatCard tone="income" label="Receitas" value={formatBRL(s.receitas)} />
         <StatCard tone="expense" label="Despesas" value={formatBRL(s.despesas)} />

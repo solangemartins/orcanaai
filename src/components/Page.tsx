@@ -25,7 +25,7 @@ export function StatCard({ label, value, tone, icon, description }: { label: str
       </div>
       <div
         className={cn(
-          "mt-2 break-words font-display text-2xl font-bold md:text-3xl",
+          "mt-2 break-words font-display text-2xl font-bold xl:text-3xl",
           tone === "income" && "text-income",
           tone === "expense" && "text-expense",
         )}
