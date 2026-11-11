@@ -9,6 +9,7 @@ import { Logo, OrcaAvatar } from "@/components/Brand";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Label } from "@/components/ui/label";
 
 const NAV = [
@@ -97,7 +98,7 @@ function Onboarding({ userId, initialName }: { userId: string; initialName: stri
     setSaving(true);
     const { error } = await supabase
       .from("profiles")
-      .update({ nome: nome.trim(), orcamento_mensal: orcamento ? Number(orcamento.replace(",", ".")) : null, onboarded: true })
+      .update({ nome: nome.trim(), orcamento_mensal: orcamento ? Number(orcamento) : null, onboarded: true })
       .eq("id", userId);
     setSaving(false);
     if (error) { toast.error("Não foi possível salvar. Tente de novo."); return; }
@@ -124,8 +125,8 @@ function Onboarding({ userId, initialName }: { userId: string; initialName: stri
         {step < 2 ? (
           <>
             <DialogHeader>
-              <DialogTitle className="text-center text-2xl">{steps[step]!.title}</DialogTitle>
-              <DialogDescription className="text-center text-base">{steps[step]!.body}</DialogDescription>
+              <DialogTitle className="text-center text-2xl">{steps[step]?.title}</DialogTitle>
+              <DialogDescription className="text-center text-base">{steps[step]?.body}</DialogDescription>
             </DialogHeader>
             <div className="flex gap-2">
               {step > 0 && (
@@ -152,7 +153,7 @@ function Onboarding({ userId, initialName }: { userId: string; initialName: stri
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="orc">Quanto você quer gastar por mês? (opcional)</Label>
-                <Input id="orc" inputMode="decimal" value={orcamento} onChange={(e) => setOrcamento(e.target.value)} placeholder="Ex.: 3000" />
+                <CurrencyInput id="orc" value={orcamento} onValueChange={setOrcamento} placeholder="R$ 0,00" />
                 <p className="text-sm text-muted-foreground">Esse é seu <strong>orçamento</strong>: um limite que ajuda o Orça a te avisar quando estiver gastando demais.</p>
               </div>
             </div>

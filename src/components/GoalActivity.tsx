@@ -10,6 +10,7 @@ import { GoalConfirmation } from "./GoalConfirmation";
 import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Input } from "./ui/input";
+import { CurrencyInput } from "./ui/currency-input";
 import { Label } from "./ui/label";
 
 export function GoalActivity({ goal }: { goal: Goal }) {
@@ -29,7 +30,7 @@ export function GoalActivity({ goal }: { goal: Goal }) {
   };
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    const value = action === "estorno" ? 0 : Number(amount.replace(/\./g, "").replace(",", "."));
+    const value = action === "estorno" ? 0 : Number(amount);
     if (!Number.isFinite(value) || value < 0 || (action === "retirada" && value === 0)) { toast.error("Informe um valor válido."); return; }
     setBusy(true);
     const { data, error } = await supabase.rpc("prepare_goal_movement", {
@@ -73,7 +74,7 @@ export function GoalActivity({ goal }: { goal: Goal }) {
           <DialogHeader><DialogTitle>{labels[action]} · {goal.titulo}</DialogTitle><DialogDescription>Saldo atual: {formatBRL(goal.valor_atual)}</DialogDescription></DialogHeader>
           {proposalId ? <GoalConfirmation proposalId={proposalId} title={goal.titulo} /> : (
             <form onSubmit={submit} className="space-y-4">
-              {action !== "estorno" && <div className="space-y-2"><Label htmlFor={`correction-${goal.id}`}>{action === "correcao" ? "Valor correto do aporte (R$)" : "Valor a retirar (R$)"}</Label><Input id={`correction-${goal.id}`} required inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} /></div>}
+              {action !== "estorno" && <div className="space-y-2"><Label htmlFor={`correction-${goal.id}`}>{action === "correcao" ? "Valor correto do aporte (R$)" : "Valor a retirar (R$)"}</Label><CurrencyInput id={`correction-${goal.id}`} required value={amount} onValueChange={setAmount} placeholder="R$ 0,00" /></div>}
               <div className="space-y-2"><Label htmlFor={`reason-${goal.id}`}>Motivo (opcional)</Label><Input id={`reason-${goal.id}`} value={reason} onChange={(e) => setReason(e.target.value)} /></div>
               <Button type="submit" disabled={busy}>Revisar {(labels[action] ?? "movimentação").toLowerCase()}</Button>
             </form>

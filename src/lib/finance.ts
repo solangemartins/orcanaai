@@ -53,14 +53,28 @@ export function normalizeCategoria(c: string | undefined | null): Categoria {
   return found ?? "Outros";
 }
 
-export function summarize(txs: Tx[]) {
+export function summarize<T extends Pick<Tx, "tipo" | "valor">>(txs: ReadonlyArray<T>) {
   let receitas = 0;
   let despesas = 0;
   for (const t of txs) {
-    if (t.tipo === "receita") receitas += Number(t.valor);
-    else despesas += Number(t.valor);
+    if (t.tipo === "receita") receitas += Math.round(Number(t.valor) * 100);
+    else despesas += Math.round(Number(t.valor) * 100);
   }
-  return { receitas, despesas, saldo: receitas - despesas };
+  return { receitas: receitas / 100, despesas: despesas / 100, saldo: (receitas - despesas) / 100 };
+}
+
+/** Current reserves, not gross historical contributions: withdrawals and reversals release cash. */
+export function availableBalance(
+  txs: ReadonlyArray<Pick<Tx, "tipo" | "valor">>,
+  goals: ReadonlyArray<Pick<Goal, "valor_atual">>,
+) {
+  const totals = summarize(txs);
+  const reservedCents = goals.reduce((sum, goal) => sum + Math.round(Number(goal.valor_atual) * 100), 0);
+  return {
+    ...totals,
+    reservado: reservedCents / 100,
+    saldo_livre: (Math.round(totals.saldo * 100) - reservedCents) / 100,
+  };
 }
 
 export function byCategory(txs: Tx[]) {

@@ -1,35 +1,16 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Goal, Tx } from "./finance";
+import { readGoals, readTransactions } from "./financial-data";
 
 export const transactionsQuery = queryOptions({
   queryKey: ["transactions"],
-  queryFn: async (): Promise<Tx[]> => {
-    const { data, error } = await supabase
-      .from("transactions")
-      .select("id,tipo,valor,categoria,descricao,data")
-      .order("data", { ascending: false })
-      .order("created_at", { ascending: false })
-      .limit(1000);
-    if (error) throw error;
-    return (data ?? []).map((t) => ({ ...t, valor: Number(t.valor) }));
-  },
+  queryFn: (): Promise<Tx[]> => readTransactions(supabase),
 });
 
 export const goalsQuery = queryOptions({
   queryKey: ["goals"],
-  queryFn: async (): Promise<Goal[]> => {
-    const { data, error } = await supabase
-      .from("goals")
-      .select("id,titulo,valor_objetivo,valor_atual,prazo")
-      .order("created_at", { ascending: true });
-    if (error) throw error;
-    return (data ?? []).map((g) => ({
-      ...g,
-      valor_objetivo: Number(g.valor_objetivo),
-      valor_atual: Number(g.valor_atual),
-    }));
-  },
+  queryFn: (): Promise<Goal[]> => readGoals(supabase),
 });
 
 export const goalMovementsQuery = queryOptions({

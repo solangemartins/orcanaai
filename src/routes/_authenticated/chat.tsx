@@ -178,6 +178,7 @@ const TOOL_LABEL: Record<string, string> = {
   "tool-criar_meta": "Criando meta",
   "tool-contribuir_meta": "Atualizando meta",
   "tool-corrigir_meta": "Preparando correção",
+  "tool-sincronizar_saldo": "Consultando saldo livre",
 };
 
 function ToolCard({ part }: { part: { type: `tool-${string}`; state: string; input?: unknown; output?: unknown; errorText?: string } }) {

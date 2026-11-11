@@ -34,4 +34,6 @@ use the editor.
 - Goal balance changes use persisted proposals and explicit UI confirmation through atomic RPCs; a database guard blocks other balance writes, including nonzero initial balances, and an audit trigger records every confirmed delta.
 - Chat persists the user before streaming and assigns each assistant a stable generated SDK ID and later timestamp; restored history is chronologically sorted and deduplicated to survive refreshes.
 - Leaf page metadata uses a shared helper so each content page supplies its own social title and description.
-- Receipt tools read persisted transaction totals after insertion and return destination choices without executing them; this prevents stale balances and keeps follow-up intent separate from actual transactions.
+- Financial reads use shared paginated RLS readers and one available-balance calculator across the dashboard, chat snapshot and tools; current goal reserves are deducted once without synthetic transactions, preventing truncated or divergent totals.
+- Receipt tools read persisted available balance after insertion and return destination choices without executing them; a read-only chat synchronization tool uses the same calculator and corrections remain confirmed proposals.
+- All money forms use a shared NumericFormat-based CurrencyInput that emits canonical numeric strings; database writes convert those strings with Number to avoid Brazilian separator parsing errors.

@@ -8,3 +8,9 @@
 ## Receita e escolha de destino
 - [x] Registrar receitas, informar o saldo livre atualizado e oferecer guardar, investir, direcionar para meta ou manter disponível.
 - [x] Preservar confirmação obrigatória e verificar receita e resposta de continuidade sem movimentações automáticas.
+
+## Saldo livre, metas e moeda brasileira
+- [x] Calcular saldo livre pelas receitas menos despesas e saldo reservado nas metas, no painel e no Orça.
+- [x] Permitir consultas atualizadas e ajustes confirmados de metas pelo chat, sem novos lançamentos contábeis artificiais.
+- [x] Aplicar máscara BRL em todos os campos monetários e salvar valores numéricos.
+- [x] Verificar cálculos, confirmação/retirada/estorno e edição dos valores em telas desktop e celular.

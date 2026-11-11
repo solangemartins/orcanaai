@@ -9,6 +9,7 @@ import { formatBRL, formatDate, goalProgress, type Goal } from "@/lib/finance";
 import { Page } from "@/components/Page";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -20,8 +21,6 @@ export const Route = createFileRoute("/_authenticated/metas")({
   head: () => pageMeta("Metas — ORÇANA AI", "Acompanhe seus objetivos, confirme aportes e consulte o histórico de correções."),
   component: Metas,
 });
-
-const num = (s: string) => Number(s.replace(/\./g, "").replace(",", "."));
 
 function Metas() {
   const goals = useQuery(goalsQuery);
@@ -68,13 +67,13 @@ function NovaMeta({ onDone }: { onDone: () => void }) {
   const [proposalId, setProposalId] = useState<string>();
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    const startingAmount = atual ? num(atual) : 0;
-    if (!Number.isFinite(num(valor)) || num(valor) <= 0 || !Number.isFinite(startingAmount) || startingAmount < 0) { toast.error("Confira os valores e tente de novo."); return; }
+    const startingAmount = atual ? Number(atual) : 0;
+    if (!Number.isFinite(Number(valor)) || Number(valor) <= 0 || !Number.isFinite(startingAmount) || startingAmount < 0) { toast.error("Confira os valores e tente de novo."); return; }
     setBusy(true);
     try {
       let goal = createdGoal;
       if (!goal) {
-        const { data, error } = await supabase.from("goals").insert({ titulo, valor_objetivo: num(valor), valor_atual: 0, prazo: prazo || null }).select("id,titulo").single();
+        const { data, error } = await supabase.from("goals").insert({ titulo, valor_objetivo: Number(valor), valor_atual: 0, prazo: prazo || null }).select("id,titulo").single();
         if (error || !data) { toast.error("Confira os valores e tente de novo."); return; }
         goal = data;
         setCreatedGoal(data);
@@ -96,8 +95,8 @@ function NovaMeta({ onDone }: { onDone: () => void }) {
     <form onSubmit={submit} className="space-y-4">
       <div className="space-y-1.5"><Label htmlFor="t">Objetivo</Label><Input id="t" required value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder="Ex.: Viagem para a praia" /></div>
       <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5"><Label htmlFor="v">Valor da meta (R$)</Label><Input id="v" required inputMode="decimal" value={valor} onChange={(e) => setValor(e.target.value)} /></div>
-        <div className="space-y-1.5"><Label htmlFor="a">Já guardado (R$)</Label><Input id="a" inputMode="decimal" value={atual} onChange={(e) => setAtual(e.target.value)} /></div>
+        <div className="space-y-1.5"><Label htmlFor="v">Valor da meta (R$)</Label><CurrencyInput id="v" required value={valor} onValueChange={setValor} placeholder="R$ 0,00" /></div>
+        <div className="space-y-1.5"><Label htmlFor="a">Já guardado (R$)</Label><CurrencyInput id="a" value={atual} onValueChange={setAtual} placeholder="R$ 0,00" /></div>
       </div>
       <div className="space-y-1.5"><Label htmlFor="p">Prazo (opcional)</Label><Input id="p" type="date" value={prazo} onChange={(e) => setPrazo(e.target.value)} /></div>
       <Button type="submit" className="w-full" size="lg" disabled={busy}>{createdGoal ? "Revisar aporte" : "Criar meta"}</Button>
@@ -116,7 +115,7 @@ function GoalCard({ goal }: { goal: Goal }) {
 
   const contribuir = async (e: FormEvent) => {
     e.preventDefault();
-    const v = num(add);
+    const v = Number(add);
     if (!v || v <= 0) return;
     setBusy(true);
     const { data, error } = await supabase.rpc("prepare_goal_movement", { p_goal_id: goal.id, p_action: "aporte", p_amount: v, p_reason: "Aporte pela página de metas", p_request_key: crypto.randomUUID() });
@@ -129,8 +128,9 @@ function GoalCard({ goal }: { goal: Goal }) {
   };
   const remover = async () => {
     if (!confirm(`Excluir a meta "${goal.titulo}"?`)) return;
-    await supabase.from("goals").delete().eq("id", goal.id);
-    qc.invalidateQueries({ queryKey: ["goals"] });
+    const { error } = await supabase.from("goals").delete().eq("id", goal.id);
+    if (error) { toast.error("Não foi possível excluir a meta. Retire o valor reservado antes de tentar novamente."); return; }
+    await qc.invalidateQueries({ queryKey: ["goals"] });
   };
 
   return (
@@ -139,8 +139,8 @@ function GoalCard({ goal }: { goal: Goal }) {
         <h2 className="text-lg font-semibold">{goal.titulo}</h2>
         <Button variant="ghost" size="icon" onClick={remover} aria-label={`Excluir ${goal.titulo}`}><Trash2 aria-hidden /></Button>
       </div>
-      <div className="mt-3 flex items-baseline justify-between">
-        <span className="font-display text-2xl font-bold">{formatBRL(goal.valor_atual)}</span>
+      <div className="mt-3 flex flex-wrap items-baseline justify-between gap-2">
+        <span className="break-words font-display text-2xl font-bold">{formatBRL(goal.valor_atual)}</span>
         <span className="text-sm text-muted-foreground">de {formatBRL(goal.valor_objetivo)}</span>
       </div>
       <Progress value={p} className="mt-2 h-3" aria-label={`${p}% concluído`} />
@@ -150,7 +150,7 @@ function GoalCard({ goal }: { goal: Goal }) {
       </div>
       {!done && (
         <form onSubmit={contribuir} className="mt-4 flex gap-2">
-          <Input inputMode="decimal" placeholder="Guardar R$" value={add} onChange={(e) => setAdd(e.target.value)} aria-label="Valor para guardar" />
+          <CurrencyInput placeholder="Guardar R$" value={add} onValueChange={setAdd} aria-label="Valor para guardar" className="min-w-0" />
           <Button type="submit" variant="turquoise" disabled={busy}>Guardar</Button>
         </form>
       )}
