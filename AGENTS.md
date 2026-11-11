@@ -34,3 +34,4 @@ use the editor.
 - Goal balance changes use persisted proposals and explicit UI confirmation through atomic RPCs; a database guard blocks other balance writes, including nonzero initial balances, and an audit trigger records every confirmed delta.
 - Chat persists the user before streaming and assigns each assistant a stable generated SDK ID and later timestamp; restored history is chronologically sorted and deduplicated to survive refreshes.
 - Leaf page metadata uses a shared helper so each content page supplies its own social title and description.
+- Receipt tools read persisted transaction totals after insertion and return destination choices without executing them; this prevents stale balances and keeps follow-up intent separate from actual transactions.
