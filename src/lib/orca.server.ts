@@ -5,8 +5,10 @@ import { z } from "zod";
 import type { Database, Json } from "@/integrations/supabase/types";
 import { assistantTimestamp } from "./chat-history";
 import { isGoalMovementRequest } from "./goal-rules";
+import { readAvailableBalance, readGoals, readTransactions } from "./financial-data";
 import {
   CATEGORIAS,
+  availableBalance,
   byCategory,
   formatBRL,
   goalProgress,
@@ -14,7 +16,6 @@ import {
   normalizeCategoria,
   summarize,
   weeklyComparison,
-  type Tx,
 } from "./finance";
 import {
   createLovableAiGatewayRunIdFetch,
@@ -70,19 +71,18 @@ const providerOptions = {
 const today = () => new Date().toISOString().slice(0, 10);
 
 async function loadSnapshot(ctx: Ctx) {
-  const [{ data: txs, error: txError }, { data: goals, error: goalError }, { data: profile, error: profileError }, { data: movements, error: movementError }] = await Promise.all([
-    ctx.supabase.from("transactions").select("id,tipo,valor,categoria,descricao,data").order("data", { ascending: false }).limit(500),
-    ctx.supabase.from("goals").select("id,titulo,valor_objetivo,valor_atual,prazo"),
+  const [txs, goals, { data: profile, error: profileError }, { data: movements, error: movementError }] = await Promise.all([
+    readTransactions(ctx.supabase),
+    readGoals(ctx.supabase),
     ctx.supabase.from("profiles").select("nome,orcamento_mensal").eq("id", ctx.user.id).maybeSingle(),
     ctx.supabase.from("goal_movements").select("id,goal_id,action,amount,balance_before,balance_after,reference_id,created_at").order("created_at", { ascending: false }).limit(30),
   ]);
-  if (txError || goalError || profileError || movementError) throw new Error("Não foi possível consultar seus dados financeiros.");
-  const list: Tx[] = (txs ?? []).map((t) => ({ ...t, valor: Number(t.valor) }));
-  return { txs: list, goals: goals ?? [], profile, movements: movements ?? [] };
+  if (profileError || movementError) throw new Error("Não foi possível consultar seus dados financeiros.");
+  return { txs, goals, profile, movements: movements ?? [] };
 }
 
 function snapshotText(s: Awaited<ReturnType<typeof loadSnapshot>>) {
-  const all = summarize(s.txs);
+  const all = availableBalance(s.txs, s.goals);
   const mes = inMonth(s.txs);
   const ms = summarize(mes);
   const cats = byCategory(mes)
@@ -98,7 +98,8 @@ function snapshotText(s: Awaited<ReturnType<typeof loadSnapshot>>) {
     .slice(0, 15)
     .map((t) => `${t.data} ${t.tipo} ${formatBRL(t.valor)} [${t.categoria}] ${t.descricao}`)
     .join("\n");
-  return `Saldo atual: ${formatBRL(all.saldo)}
+  return `Saldo Livre Disponível: ${formatBRL(all.saldo_livre)}
+Total de receitas: ${formatBRL(all.receitas)}; total de despesas: ${formatBRL(all.despesas)}; reservado nas metas: ${formatBRL(all.reservado)}
 Mês atual: receitas ${formatBRL(ms.receitas)}, despesas ${formatBRL(ms.despesas)}
 Gastos do mês por categoria: ${cats || "nenhum"}
 Orçamento mensal definido: ${s.profile?.orcamento_mensal ? formatBRL(Number(s.profile.orcamento_mensal)) : "não definido"}
@@ -121,6 +122,18 @@ export function buildTools(ctx: Ctx, latestUserText: string, requestKey: string)
     return { ok: true, confirmacao_pendente: true, proposta: data, aviso: "Nenhum saldo foi alterado. O usuário precisa clicar em Confirmar na proposta exibida no chat." };
   };
   return {
+    sincronizar_saldo: tool({
+      description: "Consulta e sincroniza a leitura atual do Saldo Livre Disponível: receitas menos despesas menos reservas atuais de TODAS as metas, inclusive concluídas com dinheiro guardado. Use para conferir saldo, vínculo contábil ou divergências após confirmação. Não altera lançamentos nem saldos de metas.",
+      inputSchema: z.object({}),
+      execute: async () => {
+        try {
+          const balance = await readAvailableBalance(ctx.supabase);
+          return { ok: true, ...balance, vinculo_sincronizado: true };
+        } catch {
+          return { ok: false, erro: "Não foi possível consultar o saldo agora. Nenhum lançamento foi alterado. Tente consultar novamente." };
+        }
+      },
+    }),
     registrar_transacao: tool({
       description:
         "Registra uma receita ou despesa do usuário. Use sempre que o usuário relatar que gastou, pagou, comprou, recebeu ou ganhou dinheiro.",
@@ -147,18 +160,14 @@ export function buildTools(ctx: Ctx, latestUserText: string, requestKey: string)
         if (error) return { ok: false, erro: error.message };
         if (input.tipo === "receita") {
           // Read persisted totals after recording, including earlier tool calls in this turn.
-          const transactions: Pick<Tx, "tipo" | "valor">[] = [];
-          const pageSize = 1000;
-          for (let start = 0; ; start += pageSize) {
-            const { data: rows, error: balanceError } = await ctx.supabase.from("transactions")
-              .select("tipo,valor").order("id").range(start, start + pageSize - 1);
-            if (balanceError) return { ok: true, transacao: data, saldo_livre: null, aviso: "Receita registrada, mas não foi possível consultar o saldo atualizado. Não registre a receita novamente." };
-            transactions.push(...(rows ?? []));
-            if ((rows?.length ?? 0) < pageSize) break;
+          let balance;
+          try {
+            balance = await readAvailableBalance(ctx.supabase);
+          } catch {
+            return { ok: true, transacao: data, saldo_livre: null, aviso: "Receita registrada, mas não foi possível consultar o saldo atualizado. Não registre a receita novamente." };
           }
-          const saldo = transactions.reduce((total, t) => total + (t.tipo === "receita" ? Number(t.valor) : -Number(t.valor)), 0);
           return {
-            ok: true, transacao: data, saldo_livre: Math.round(saldo * 100) / 100,
+            ok: true, transacao: data, saldo_livre: balance.saldo_livre, reservado_metas: balance.reservado,
             destinos_disponiveis: ["guardar_parte", "investir", "direcionar_meta", "manter_disponivel"],
             destino_confirmado: null,
           };
@@ -215,6 +224,8 @@ export function buildTools(ctx: Ctx, latestUserText: string, requestKey: string)
 }
 
 const ORCA_PERSONA = `Você é o Orça, o agente financeiro do ORÇANA AI. Fale em português do Brasil, com linguagem simples, amigável e educativa, para pessoas iniciantes em finanças.
+- Saldo Livre Disponível = total de receitas - total de despesas - saldo atualmente reservado nas metas. Exemplo: receita de R$ 700 e reserva de R$ 650 deixam R$ 50 livres. Use o saldo atual das metas, não a soma bruta de aportes históricos; retiradas, correções e estornos liberam a diferença. Meta concluída continua reservada até retirada.
+- Você tem a ferramenta sincronizar_saldo para consultar o vínculo contábil atualizado pelo chat. Ao pedir sincronização ou reclamar de divergência, use essa ferramenta e explique os totais reais. Nunca crie receitas ou despesas fictícias, nem novo aporte para sincronizar o saldo. Não encaminhe para suporte: consulte o saldo e, se o usuário pedir alteração da meta, use contribuir_meta ou corrigir_meta com confirmação. Sincronizar a leitura não exige confirmação pois não movimenta dinheiro. Depois de uma confirmação, consulte novamente antes de informar saldo; resultados antigos do chat podem estar desatualizados.
 - Quando o usuário relatar uma movimentação ("Gastei R$ 45 no almoço", "Recebi R$ 2.500 de salário"), chame registrar_transacao com a categoria correta entre: ${CATEGORIAS.join(", ")}. Depois confirme em uma frase curta (valor, categoria) e, se fizer sentido, dê uma dica rápida.
 - Se a mensagem tiver várias movimentações, registre cada uma.
 - Se faltar o valor, pergunte antes de registrar.
