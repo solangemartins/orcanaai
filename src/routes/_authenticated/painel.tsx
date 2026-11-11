@@ -9,9 +9,10 @@ import { Page, StatCard } from "@/components/Page";
 import { OrcaAvatar } from "@/components/Brand";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { pageMeta } from "@/lib/metadata";
 
 export const Route = createFileRoute("/_authenticated/painel")({
-  head: () => ({ meta: [{ title: "Painel — ORÇANA AI" }, { name: "description", content: "Visão geral das suas finanças." }] }),
+  head: () => pageMeta("Painel — ORÇANA AI", "Visão geral do saldo, receitas, despesas e metas financeiras."),
   component: Painel,
 });
 

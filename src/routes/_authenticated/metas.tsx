@@ -12,9 +12,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { GoalActivity } from "@/components/GoalActivity";
+import { GoalConfirmation } from "@/components/GoalConfirmation";
+import { pageMeta } from "@/lib/metadata";
 
 export const Route = createFileRoute("/_authenticated/metas")({
-  head: () => ({ meta: [{ title: "Metas — ORÇANA AI" }, { name: "description", content: "Acompanhe seus objetivos financeiros." }] }),
+  head: () => pageMeta("Metas — ORÇANA AI", "Acompanhe seus objetivos, confirme aportes e consulte o histórico de correções."),
   component: Metas,
 });
 
@@ -47,7 +50,7 @@ function Metas() {
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
-          {goals.data!.map((g) => <GoalCard key={g.id} goal={g} />)}
+          {(goals.data ?? []).map((g) => <GoalCard key={g.id} goal={g} />)}
         </div>
       )}
     </Page>
@@ -89,6 +92,8 @@ function NovaMeta({ onDone }: { onDone: () => void }) {
 function GoalCard({ goal }: { goal: Goal }) {
   const qc = useQueryClient();
   const [add, setAdd] = useState("");
+  const [proposalId, setProposalId] = useState<string>();
+  const [busy, setBusy] = useState(false);
   const p = goalProgress(goal);
   const done = p >= 100;
   const falta = Math.max(0, goal.valor_objetivo - goal.valor_atual);
@@ -97,11 +102,14 @@ function GoalCard({ goal }: { goal: Goal }) {
     e.preventDefault();
     const v = num(add);
     if (!v || v <= 0) return;
-    const { error } = await supabase.from("goals").update({ valor_atual: goal.valor_atual + v }).eq("id", goal.id);
-    if (error) { toast.error("Não foi possível atualizar."); return; }
+    setBusy(true);
+    const { data, error } = await supabase.rpc("prepare_goal_movement", { p_goal_id: goal.id, p_action: "aporte", p_amount: v, p_reason: "Aporte pela página de metas", p_request_key: crypto.randomUUID() });
+    setBusy(false);
+    if (error) { toast.error(error.message); return; }
     setAdd("");
-    qc.invalidateQueries({ queryKey: ["goals"] });
-    toast.success(`${formatBRL(v)} guardados em ${goal.titulo}`);
+    const proposal = data as { id?: string } | null;
+    await qc.invalidateQueries({ queryKey: ["goal-proposals"] });
+    setProposalId(proposal?.id);
   };
   const remover = async () => {
     if (!confirm(`Excluir a meta "${goal.titulo}"?`)) return;
@@ -127,9 +135,11 @@ function GoalCard({ goal }: { goal: Goal }) {
       {!done && (
         <form onSubmit={contribuir} className="mt-4 flex gap-2">
           <Input inputMode="decimal" placeholder="Guardar R$" value={add} onChange={(e) => setAdd(e.target.value)} aria-label="Valor para guardar" />
-          <Button type="submit" variant="turquoise">Guardar</Button>
+          <Button type="submit" variant="turquoise" disabled={busy}>Guardar</Button>
         </form>
       )}
+      {proposalId && <GoalConfirmation proposalId={proposalId} title={goal.titulo} />}
+      <GoalActivity goal={goal} />
     </article>
   );
 }
